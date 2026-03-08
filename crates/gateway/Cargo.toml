@@ -1,0 +1,51 @@
+[package]
+name = "ude-gateway"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "gateway"
+path = "src/main.rs"
+
+[dependencies]
+ude-core = { path = "../core" }
+ude-modules = { path = "../modules" }
+
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# HTTP
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Logging & Observability
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-prometheus = { workspace = true }
+opentelemetry-semantic-conventions = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+prometheus = { workspace = true }
+
+# Configuration
+clap = { version = "4.5", features = ["derive", "env"] }
+config = { workspace = true }
+
+# Concurrency
+arc-swap = { workspace = true }
+parking_lot = "0.12"
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }

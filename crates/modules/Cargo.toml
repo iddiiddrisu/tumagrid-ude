@@ -1,0 +1,51 @@
+[package]
+name = "ude-modules"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+ude-core = { path = "../core" }
+
+async-trait = { workspace = true }
+futures-util = { workspace = true }
+async-recursion = "1.1"
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+mongodb = { workspace = true }
+redis = { workspace = true }
+
+# Auth
+jsonwebtoken = { workspace = true }
+base64 = { workspace = true }
+
+# HTTP Client for REST APIs
+reqwest = { workspace = true }
+
+# Concurrency
+parking_lot = "0.12"
+arc-swap = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# For dependency graph
+petgraph = "0.6"
+
+# Template engine for response composition
+tera = { workspace = true }
+
+# Regex for cache key parsing
+regex = "1.10"
+
+# For service mesh weighted routing
+rand = "0.8"
+futures = "0.3.32"

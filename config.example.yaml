@@ -1,0 +1,212 @@
+# UDE (Universal Developer Engine) Example Configuration
+
+clusterConfig:
+  letsencryptEmail: "admin@example.com"
+  enableTelemetry: true
+
+# SSL Configuration (optional)
+# ssl:
+#   enabled: true
+#   cert: /path/to/cert.pem
+#   key: /path/to/key.pem
+
+# Cache Configuration (optional)
+# cacheConfig:
+#   enabled: true
+#   conn: redis://localhost:6379
+#   defaultTtl: 300
+
+projects:
+  # Example project
+  myapp:
+    projectConfig:
+      id: myapp
+      name: "My Application"
+      contextTimeGraphQL: 30000  # 30 seconds timeout
+      aesKey: "your-32-char-encryption-key-here"
+      secrets:
+        - name: DATABASE_URL
+          value: "postgresql://user:pass@localhost:5432/mydb"
+
+    # Database configurations
+    databaseConfigs:
+      postgres:
+        id: postgres
+        dbAlias: postgres
+        type: postgres
+        enabled: true
+        conn: "postgresql://user:password@localhost:5432"
+        name: myapp_db
+        driverConfig:
+          maxConn: 50
+          maxIdleTimeout: 300
+          minConn: 5
+          maxIdleConn: 10
+
+      mysql:
+        id: mysql
+        dbAlias: mysql
+        type: mysql
+        enabled: false
+        conn: "mysql://user:password@localhost:3306"
+        name: myapp_db
+        driverConfig:
+          maxConn: 30
+          maxIdleTimeout: 300
+
+    # Database schemas (optional)
+    databaseSchemas:
+      users_schema:
+        id: users_schema
+        dbAlias: postgres
+        col: users
+        schema: |
+          {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "email": {"type": "string", "format": "email"},
+              "age": {"type": "integer", "minimum": 0}
+            },
+            "required": ["name", "email"]
+          }
+
+    # Database access rules
+    databaseRules:
+      users_rule:
+        id: users_rule
+        dbAlias: postgres
+        col: users
+        rules:
+          # Allow anyone to read
+          read:
+            rule: allow
+
+          # Only authenticated users can create
+          create:
+            rule: authenticated
+
+          # Only allow users to update their own records
+          update:
+            rule: match
+            type: "=="
+            f1: "args.find.id"
+            f2: "auth.id"
+
+          # Only admins can delete
+          delete:
+            rule: match
+            type: "=="
+            f1: "auth.role"
+            f2: "admin"
+
+      posts_rule:
+        id: posts_rule
+        dbAlias: postgres
+        col: posts
+        rules:
+          read:
+            rule: allow
+
+          create:
+            rule: authenticated
+
+          update:
+            rule: and
+            clauses:
+              - rule: authenticated
+              - rule: match
+                type: "=="
+                f1: "args.find.author_id"
+                f2: "auth.id"
+
+          delete:
+            rule: or
+            clauses:
+              - rule: match
+                type: "=="
+                f1: "auth.role"
+                f2: "admin"
+              - rule: match
+                type: "=="
+                f1: "args.find.author_id"
+                f2: "auth.id"
+
+    # Authentication configuration
+    auths:
+      default:
+        id: default
+        secret: "my-super-secret-key-change-this-in-production"
+        secrets:  # For key rotation
+          - "my-super-secret-key-change-this-in-production"
+          - "my-old-secret-key"
+
+    # Eventing configuration (optional)
+    eventingConfig:
+      enabled: true
+      dbAlias: postgres
+      col: event_logs
+
+    # Event triggers
+    eventingTriggers:
+      user_created:
+        id: user_created
+        eventType: "db.postgres.users.create"
+        url: "https://webhook.site/your-webhook-url"
+        retries: 3
+        timeout: 10
+        # Optional filter
+        filter:
+          rule: match
+          type: "=="
+          f1: "args.doc.status"
+          f2: "active"
+        # Optional template for payload transformation
+        template: |
+          {
+            "user_id": "{{ .doc.id }}",
+            "user_email": "{{ .doc.email }}",
+            "timestamp": "{{ .timestamp }}"
+          }
+
+    # File storage configuration (optional)
+    # fileStoreConfig:
+    #   enabled: true
+    #   type: local  # or s3, gcs
+    #   conn: "/path/to/storage"
+    #   bucket: "myapp-files"
+
+    # File storage rules
+    # fileStoreRules:
+    #   public_files:
+    #     id: public_files
+    #     prefix: "/public/*"
+    #     rule:
+    #       rule: allow
+    #
+    #   private_files:
+    #     id: private_files
+    #     prefix: "/private/*"
+    #     rule:
+    #       rule: authenticated
+
+    # Ingress routes (optional)
+    # ingressRoutes:
+    #   api_route:
+    #     id: api_route
+    #     source:
+    #       protocol: http
+    #       host: api.myapp.com
+    #       port: 80
+    #       url: "/api/*"
+    #     targets:
+    #       - host: localhost
+    #         port: 4122
+    #         weight: 100
+
+    # Remote services (optional)
+    # remoteServices:
+    #   payment_service:
+    #     id: payment_service
+    #     url: "https://payment-api.example.com"
