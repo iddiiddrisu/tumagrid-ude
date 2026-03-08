@@ -62,6 +62,13 @@ impl AuthModule {
     pub fn create_internal_token(&self, _ctx: &Context) -> Result<String> {
         let claims = TokenClaims {
             id: "InternalUserID".to_string(),
+            email: None,
+            name: Some("UDE System".to_string()),
+            org_id: None,
+            org_slug: None,
+            org_role: None,
+            orgs: Vec::new(),
+            permissions: Vec::new(),
             role: Some("SpaceCloud".to_string()),
             extra: std::collections::HashMap::new(),
             exp: None,
@@ -75,6 +82,13 @@ impl AuthModule {
     pub fn create_sc_token(&self, _ctx: &Context) -> Result<String> {
         let claims = TokenClaims {
             id: self.node_id.to_string(),
+            email: None,
+            name: Some("UDE Node".to_string()),
+            org_id: None,
+            org_slug: None,
+            org_role: None,
+            orgs: Vec::new(),
+            permissions: Vec::new(),
             role: Some("SpaceCloud".to_string()),
             extra: std::collections::HashMap::new(),
             exp: None,

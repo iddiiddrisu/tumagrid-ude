@@ -162,26 +162,80 @@ pub struct Rules {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "rule", rename_all = "lowercase")]
 pub enum Rule {
+    // ===== Basic Rules =====
     Allow,
     Deny,
     Authenticated,
+
+    // ===== Field Matching =====
     Match {
         #[serde(rename = "type")]
         match_type: MatchType,
         f1: serde_json::Value,
         f2: serde_json::Value,
     },
+
+    // ===== Logical Operators =====
     And {
         clauses: Vec<Rule>,
     },
     Or {
         clauses: Vec<Rule>,
     },
+
+    // ===== RBAC Rules (Multi-Tenant) =====
+
+    /// Check if user has a specific permission in current organization
+    #[serde(rename = "has_permission")]
+    HasPermission {
+        permission: String,
+    },
+
+    /// Check if user has a specific role in current organization
+    #[serde(rename = "has_role")]
+    HasRole {
+        roles: Vec<String>,
+    },
+
+    /// Check if user is owner of current organization
+    #[serde(rename = "org_owner")]
+    OrgOwner,
+
+    /// Check if user is admin (owner or admin role)
+    #[serde(rename = "org_admin")]
+    OrgAdmin,
+
+    /// Check if resource belongs to user's organization
+    #[serde(rename = "resource_owner")]
+    ResourceOwner {
+        /// Field in the resource containing organization_id
+        field: String,
+    },
+
+    /// Check if user belongs to specific user (e.g., created_by, owner_id)
+    #[serde(rename = "user_owner")]
+    UserOwner {
+        /// Field in the resource containing user_id
+        field: String,
+    },
+
+    /// Allow cross-organization access for specific organizations
+    #[serde(rename = "cross_org_access")]
+    CrossOrgAccess {
+        /// List of organization IDs that have access
+        allowed_orgs: Vec<String>,
+    },
+
+    // ===== Advanced Rules (TODO) =====
+
+    /// Query-based rule evaluation (not yet implemented)
     Query {
         db_alias: String,
         col: String,
         find: serde_json::Value,
     },
+
+    /// Webhook-based rule evaluation (not yet implemented)
     Webhook {
         url: String,
         #[serde(skip_serializing_if = "Option::is_none")]

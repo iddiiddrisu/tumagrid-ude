@@ -41,6 +41,64 @@ impl RuleEvaluator {
                 Ok(false)
             }
 
+            // ===== RBAC Rules (Multi-Tenant) =====
+
+            Rule::HasPermission { permission } => {
+                Ok(claims.has_permission(permission))
+            }
+
+            Rule::HasRole { roles } => {
+                Ok(claims.has_any_role(&roles.iter().map(|s| s.as_str()).collect::<Vec<_>>()))
+            }
+
+            Rule::OrgOwner => {
+                Ok(claims.is_org_owner())
+            }
+
+            Rule::OrgAdmin => {
+                Ok(claims.is_org_admin())
+            }
+
+            Rule::ResourceOwner { field } => {
+                // Check if resource's organization_id matches user's org_id
+                if let Some(user_org_id) = &claims.org_id {
+                    let resource_org_id = Self::json_path(args, field)?;
+                    let resource_org_str = resource_org_id.as_str().ok_or_else(|| {
+                        Error::Validation {
+                            field: field.clone(),
+                            message: "Organization ID must be a string".to_string(),
+                        }
+                    })?;
+                    Ok(user_org_id == resource_org_str)
+                } else {
+                    // No org context, deny access
+                    Ok(false)
+                }
+            }
+
+            Rule::UserOwner { field } => {
+                // Check if resource's user_id field matches current user
+                let resource_user_id = Self::json_path(args, field)?;
+                let resource_user_str = resource_user_id.as_str().ok_or_else(|| {
+                    Error::Validation {
+                        field: field.clone(),
+                        message: "User ID must be a string".to_string(),
+                    }
+                })?;
+                Ok(&claims.id == resource_user_str)
+            }
+
+            Rule::CrossOrgAccess { allowed_orgs } => {
+                // Allow if user's org is in the allowed list
+                if let Some(user_org_id) = &claims.org_id {
+                    Ok(allowed_orgs.contains(user_org_id))
+                } else {
+                    Ok(false)
+                }
+            }
+
+            // ===== Advanced Rules (TODO) =====
+
             Rule::Query { .. } => {
                 // TODO: Implement nested query evaluation
                 Err(Error::Internal(

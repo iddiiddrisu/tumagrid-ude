@@ -48,20 +48,301 @@ impl Default for Context {
 }
 
 //═══════════════════════════════════════════════════════════
-// TOKEN CLAIMS
+// TOKEN CLAIMS (Multi-Tenant)
 //═══════════════════════════════════════════════════════════
 
+/// JWT token claims with multi-tenant organization support
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenClaims {
+    /// User ID (unique across all organizations)
     pub id: String,
+
+    /// User email
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+
+    /// User display name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    // ===== Multi-Tenancy Fields =====
+
+    /// Current active organization ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_id: Option<String>,
+
+    /// Current active organization slug (human-readable)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_slug: Option<String>,
+
+    /// Role in the current organization (owner, admin, developer, viewer)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_role: Option<String>,
+
+    /// All organizations the user belongs to
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub orgs: Vec<OrgMembership>,
+
+    /// Computed permissions for the current organization
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub permissions: Vec<String>,
+
+    // ===== Legacy/Compatibility =====
+
+    /// Legacy role field (for backwards compatibility)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>,
+
+    /// Extra custom claims
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
+
+    // ===== Standard JWT Fields =====
+
+    /// Expiration time (Unix timestamp)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exp: Option<u64>,
+
+    /// Issued at time (Unix timestamp)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub iat: Option<u64>,
+}
+
+impl TokenClaims {
+    /// Check if user has a specific permission in current organization
+    pub fn has_permission(&self, permission: &str) -> bool {
+        self.permissions.iter().any(|p| p == permission)
+    }
+
+    /// Check if user has a specific role in current organization
+    pub fn has_role(&self, role: &str) -> bool {
+        self.org_role.as_ref().map(|r| r == role).unwrap_or(false)
+    }
+
+    /// Check if user has any of the specified roles
+    pub fn has_any_role(&self, roles: &[&str]) -> bool {
+        if let Some(user_role) = &self.org_role {
+            roles.iter().any(|r| *r == user_role)
+        } else {
+            false
+        }
+    }
+
+    /// Check if user is owner of current organization
+    pub fn is_org_owner(&self) -> bool {
+        self.has_role("owner")
+    }
+
+    /// Check if user is admin or owner of current organization
+    pub fn is_org_admin(&self) -> bool {
+        self.has_any_role(&["owner", "admin"])
+    }
+
+    /// Get the current organization ID (panics if not set)
+    pub fn org_id(&self) -> &str {
+        self.org_id.as_ref().expect("org_id not set in token")
+    }
+
+    /// Try to get the current organization ID
+    pub fn try_org_id(&self) -> Option<&str> {
+        self.org_id.as_deref()
+    }
+}
+
+/// Organization membership information
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct OrgMembership {
+    /// Organization ID
+    pub org_id: String,
+
+    /// Organization slug (human-readable identifier)
+    pub org_slug: String,
+
+    /// Organization name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_name: Option<String>,
+
+    /// User's role in this organization
+    pub role: String,
+
+    /// Permissions in this organization
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub permissions: Vec<String>,
+}
+
+//═══════════════════════════════════════════════════════════
+// ORGANIZATION MODELS
+//═══════════════════════════════════════════════════════════
+
+/// Organization (tenant boundary)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Organization {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub settings: Option<serde_json::Value>,
+    pub created_at: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<u64>,
+}
+
+/// Request to create an organization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateOrganizationRequest {
+    pub name: String,
+    pub slug: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// Request to invite a user to an organization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InviteUserRequest {
+    pub email: String,
+    pub role: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<Vec<String>>,
+}
+
+/// Organization invitation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Invitation {
+    pub id: String,
+    pub organization_id: String,
+    pub email: String,
+    pub role: String,
+    pub status: InvitationStatus,
+    pub created_at: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum InvitationStatus {
+    Pending,
+    Accepted,
+    Rejected,
+    Expired,
+}
+
+/// Organization member
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrganizationMember {
+    pub id: String,
+    pub organization_id: String,
+    pub user_id: String,
+    pub email: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub role: String,
+    #[serde(default)]
+    pub permissions: Vec<String>,
+    pub created_at: u64,
+}
+
+//═══════════════════════════════════════════════════════════
+// RBAC MODELS
+//═══════════════════════════════════════════════════════════
+
+/// Built-in system roles
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum SystemRole {
+    /// Organization owner (full access)
+    Owner,
+    /// Administrator (manage org & users)
+    Admin,
+    /// Developer (deploy & manage projects)
+    Developer,
+    /// Viewer (read-only access)
+    Viewer,
+    /// Custom role (defined per organization)
+    Custom(String),
+}
+
+impl SystemRole {
+    pub fn as_str(&self) -> &str {
+        match self {
+            SystemRole::Owner => "owner",
+            SystemRole::Admin => "admin",
+            SystemRole::Developer => "developer",
+            SystemRole::Viewer => "viewer",
+            SystemRole::Custom(name) => name,
+        }
+    }
+
+    /// Get default permissions for a system role
+    pub fn default_permissions(&self) -> Vec<&'static str> {
+        match self {
+            SystemRole::Owner => vec![
+                "org:*",
+                "projects:*",
+                "crud:*",
+                "auth:*",
+                "deploy:*",
+                "members:*",
+                "settings:*",
+            ],
+            SystemRole::Admin => vec![
+                "projects:*",
+                "crud:*",
+                "deploy:staging",
+                "members:invite",
+                "members:view",
+                "settings:view",
+            ],
+            SystemRole::Developer => vec![
+                "projects:read",
+                "projects:write",
+                "crud:read",
+                "crud:write",
+                "deploy:staging",
+            ],
+            SystemRole::Viewer => vec![
+                "projects:read",
+                "crud:read",
+            ],
+            SystemRole::Custom(_) => vec![],
+        }
+    }
+}
+
+/// Custom role definition (per organization)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomRole {
+    pub id: String,
+    pub organization_id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub permissions: Vec<String>,
+    pub created_at: u64,
+}
+
+/// Permission check result
+#[derive(Debug, Clone)]
+pub struct PermissionCheck {
+    pub allowed: bool,
+    pub reason: Option<String>,
+}
+
+impl PermissionCheck {
+    pub fn allow() -> Self {
+        Self {
+            allowed: true,
+            reason: None,
+        }
+    }
+
+    pub fn deny(reason: impl Into<String>) -> Self {
+        Self {
+            allowed: false,
+            reason: Some(reason.into()),
+        }
+    }
 }
 
 //═══════════════════════════════════════════════════════════
