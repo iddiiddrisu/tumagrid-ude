@@ -25,7 +25,6 @@ pub fn extract_context(headers: &HeaderMap) -> Context {
 }
 
 /// Extract bearer token from Authorization header
-#[allow(dead_code)]
 pub fn extract_token(headers: &HeaderMap) -> Result<String> {
     headers
         .get("Authorization")

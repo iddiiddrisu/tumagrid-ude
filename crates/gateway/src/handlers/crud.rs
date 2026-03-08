@@ -1,4 +1,4 @@
-use crate::handlers::extract_context;
+use crate::handlers::{extract_context, extract_token};
 use crate::state::AppState;
 use axum::{
     extract::{Path, State},
@@ -31,14 +31,18 @@ pub async fn create_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // TODO: Authorization check
-    // let token = extract_token(&headers)?;
-    // modules.auth.is_create_authorized(&ctx, &project, db_type, &collection, &token, &req).await?;
+    // Authorization check
+    let token = extract_token(&headers)?;
+    let db_type = modules.crud.get_db_type(&db_alias).await?;
+    let params = modules
+        .auth
+        .is_create_authorized(&ctx, &project, db_type, &collection, &token, &req)
+        .await?;
 
     // Execute create
     let count = modules
         .crud
-        .create(&ctx, &db_alias, &collection, req, RequestParams::default())
+        .create(&ctx, &db_alias, &collection, req, params)
         .await?;
 
     tracing::info!(
@@ -73,22 +77,27 @@ pub async fn read_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // TODO: Authorization check
-    // let token = extract_token(&headers)?;
-    // let (post_process, params) = modules.auth
-    //     .is_read_authorized(&ctx, &project, db_type, &collection, &token, &req)
-    //     .await?;
-
-    // Execute read
-    let response = modules
-        .crud
-        .read(&ctx, &db_alias, &collection, req, RequestParams::default())
+    // Authorization check
+    let token = extract_token(&headers)?;
+    let db_type = modules.crud.get_db_type(&db_alias).await?;
+    let (post_process, params) = modules
+        .auth
+        .is_read_authorized(&ctx, &project, db_type, &collection, &token, &req)
         .await?;
 
-    // TODO: Post-process
-    // for value in &mut response.data {
-    //     modules.auth.post_process(&ctx, post_process.clone(), value).await?;
-    // }
+    // Execute read
+    let mut response = modules
+        .crud
+        .read(&ctx, &db_alias, &collection, req, params)
+        .await?;
+
+    // Post-process results (field filtering, encryption, etc.)
+    for value in &mut response.data {
+        modules
+            .auth
+            .post_process(&ctx, post_process.clone(), value)
+            .await?;
+    }
 
     tracing::info!(
         request_id = %ctx.request_id,
@@ -122,14 +131,18 @@ pub async fn update_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // TODO: Authorization check
-    // let token = extract_token(&headers)?;
-    // modules.auth.is_update_authorized(&ctx, &project, db_type, &collection, &token, &req).await?;
+    // Authorization check
+    let token = extract_token(&headers)?;
+    let db_type = modules.crud.get_db_type(&db_alias).await?;
+    let params = modules
+        .auth
+        .is_update_authorized(&ctx, &project, db_type, &collection, &token, &req)
+        .await?;
 
     // Execute update
     let count = modules
         .crud
-        .update(&ctx, &db_alias, &collection, req, RequestParams::default())
+        .update(&ctx, &db_alias, &collection, req, params)
         .await?;
 
     tracing::info!(
@@ -164,14 +177,18 @@ pub async fn delete_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // TODO: Authorization check
-    // let token = extract_token(&headers)?;
-    // modules.auth.is_delete_authorized(&ctx, &project, db_type, &collection, &token, &req).await?;
+    // Authorization check
+    let token = extract_token(&headers)?;
+    let db_type = modules.crud.get_db_type(&db_alias).await?;
+    let params = modules
+        .auth
+        .is_delete_authorized(&ctx, &project, db_type, &collection, &token, &req)
+        .await?;
 
     // Execute delete
     let count = modules
         .crud
-        .delete(&ctx, &db_alias, &collection, req, RequestParams::default())
+        .delete(&ctx, &db_alias, &collection, req, params)
         .await?;
 
     tracing::info!(
