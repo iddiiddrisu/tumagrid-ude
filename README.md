@@ -4,6 +4,14 @@ A high-performance Backend-as-a-Service (BaaS) platform written in Rust, featuri
 
 > **⚠️ BETA SOFTWARE**: UDE is currently in beta and under active development. It is suitable for development, testing, and internal projects, but **NOT recommended for production use** without additional security hardening. See [Known Limitations](#️-known-limitations-beta-release) for details.
 
+## Credits
+
+**Architecture & Solution Design**: [SpaceCloud](https://github.com/spaceuptech/space-cloud)
+
+UDE is a Rust rewrite and reimplementation of the SpaceCloud project's architecture and concepts, adapted for the Tumagrid ecosystem. The original SpaceCloud team pioneered the Backend-as-a-Service architecture with features like API orchestration, service mesh, and multi-database support. This project builds upon their innovative work while bringing it to the Rust ecosystem with enhanced performance, type safety, and modern tooling.
+
+We are grateful to the SpaceCloud team for their groundbreaking work in the BaaS space.
+
 ## Features
 
 ### Core Capabilities ✅
