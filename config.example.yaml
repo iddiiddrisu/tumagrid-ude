@@ -204,6 +204,121 @@ projects:
     #     id: payment_service
     #     url: "https://payment-api.example.com"
 
+    # Composite queries (API Orchestration)
+    # WHY: Compose data from multiple sources in a single API call
+    compositeQueries:
+      # Example: E-commerce user dashboard
+      user_dashboard:
+        id: user_dashboard
+        sources:
+          # Fetch user from database
+          - id: user
+            source:
+              type: database
+              dbAlias: postgres
+              collection: users
+              find:
+                id: "${args.userId}"
+              options:
+                select:
+                  id: 1
+                  name: 1
+                  email: 1
+            parallel: true
+
+          # Fetch user's orders (depends on user)
+          - id: orders
+            source:
+              type: database
+              dbAlias: postgres
+              collection: orders
+              find:
+                user_id: "${user.id}"
+              options:
+                limit: 10
+                sort: ["-created_at"]
+            dependsOn: ["user"]
+            parallel: false
+
+          # Fetch recommendations from external API
+          - id: recommendations
+            source:
+              type: restapi
+              url: "https://api.recommendations.example.com/v1/recommend"
+              method: GET
+              params:
+                userId: "${args.userId}"
+                limit: "5"
+            parallel: true
+            timeoutMs: 2000
+
+        # Compose final response
+        compose:
+          user: "${user}"
+          recent_orders: "${orders}"
+          recommendations: "${recommendations}"
+
+      # Example: Service mesh + database composition
+      payment_status:
+        id: payment_status
+        sources:
+          # Fetch order from database
+          - id: order
+            source:
+              type: database
+              dbAlias: postgres
+              collection: orders
+              find:
+                id: "${args.orderId}"
+
+          # Call payment service in mesh
+          - id: payment
+            source:
+              type: servicemesh
+              service: payment-service
+              path: /v1/payments/status
+              method: POST
+              body:
+                transactionId: "${order.transaction_id}"
+            dependsOn: ["order"]
+
+        compose:
+          order: "${order}"
+          payment_status: "${payment}"
+
+      # Example: With caching
+      product_details:
+        id: product_details
+        sources:
+          # Fetch product (cached for 5 minutes)
+          - id: product
+            source:
+              type: database
+              dbAlias: postgres
+              collection: products
+              find:
+                id: "${args.productId}"
+            cache:
+              strategy: ttl
+              seconds: 300
+
+          # Fetch reviews (no cache)
+          - id: reviews
+            source:
+              type: database
+              dbAlias: postgres
+              collection: reviews
+              find:
+                product_id: "${args.productId}"
+              options:
+                limit: 20
+                sort: ["-created_at"]
+
+        compose:
+          product: "${product}"
+          reviews: "${reviews}"
+          review_count: "${reviews.length}"
+
   # ═══════════════════════════════════════════════════════════
   # NAMESPACE ISOLATION EXAMPLES
   # ═══════════════════════════════════════════════════════════

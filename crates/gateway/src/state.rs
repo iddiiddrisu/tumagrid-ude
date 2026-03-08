@@ -3,9 +3,11 @@ use parking_lot::RwLock;
 use ude_core::*;
 use ude_modules::{
     AuthModule, CrudModule, DataSourceRegistry, DatabaseExecutor, QueryExecutor, ServiceMesh,
+    CacheExecutor,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
+use ude_core::CompositeQuery;
 
 //═══════════════════════════════════════════════════════════
 // APPLICATION STATE
@@ -82,11 +84,19 @@ impl AppState {
             .build_orchestration_module(crud.clone(), config)
             .await?;
 
+        // Load composite queries from config
+        let composite_queries = Arc::new(RwLock::new(config.composite_queries.clone()));
+        tracing::info!(
+            num_queries = config.composite_queries.len(),
+            "Loaded composite queries"
+        );
+
         Ok(ProjectModules {
             crud,
             auth,
             project_config: config.project_config.clone(),
             orchestration,
+            composite_queries,
         })
     }
 
@@ -106,12 +116,21 @@ impl AppState {
         registry = registry.with_service_mesh(self.mesh.executor());
 
         // Add cache executor if Redis is configured
-        // TODO: Get Redis URL from config
-        // For now, we'll skip cache executor initialization
-        // if let Some(redis_url) = config.cache_config.as_ref() {
-        //     let cache_executor = Arc::new(CacheExecutor::with_redis(redis_url).await?);
-        //     registry = registry.with_cache(cache_executor);
-        // }
+        let root_config = self.config.load();
+        if let Some(cache_config) = root_config.cache_config.as_ref() {
+            if cache_config.enabled {
+                tracing::info!(redis_url = %cache_config.conn, "Initializing Redis cache executor");
+                match CacheExecutor::with_redis(&cache_config.conn).await {
+                    Ok(cache_executor) => {
+                        registry = registry.with_cache(Arc::new(cache_executor));
+                        tracing::info!("Cache executor initialized successfully");
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = %e, "Failed to initialize cache executor, continuing without cache");
+                    }
+                }
+            }
+        }
 
         // Create query executor
         let executor = Arc::new(QueryExecutor::new(Arc::new(registry)));
@@ -157,4 +176,5 @@ pub struct ProjectModules {
     pub auth: Arc<AuthModule>,
     pub project_config: ProjectConfig,
     pub orchestration: Option<Arc<QueryExecutor>>,
+    pub composite_queries: Arc<RwLock<HashMap<String, CompositeQuery>>>,
 }

@@ -42,6 +42,8 @@ pub struct Project {
     pub ingress_routes: HashMap<String, IngressRoute>,
     #[serde(default)]
     pub remote_services: HashMap<String, RemoteService>,
+    #[serde(default)]
+    pub composite_queries: HashMap<String, crate::CompositeQuery>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

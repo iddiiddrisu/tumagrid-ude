@@ -119,55 +119,48 @@ pub async fn execute_query(
         .ok_or_else(|| Error::Internal("Orchestration module not initialized".to_string()))?;
 
     // Get the composite query from configuration
-    // TODO: Load composite queries from config
-    // For now, return error indicating queries need to be configured
-    return Err::<Json<ExecuteQueryResponse>, _>(Error::Validation {
+    let queries = project.composite_queries.read();
+    let query = queries.get(&query_id).cloned().ok_or_else(|| Error::Validation {
         field: "queryId".to_string(),
         message: format!(
             "Composite query '{}' not found. Configure queries in config.yaml under compositeQueries",
             query_id
         ),
-    }
-    .into());
-
-    // Code for when composite queries are loaded from config:
-    /*
-    let query = orchestration.get_query(&query_id)
-        .ok_or_else(|| Error::NotFound {
-            resource: "composite_query".to_string(),
-            id: query_id.clone(),
-        })?;
-
-    // Create context
-    let ctx = Context {
-        project_id: project_id.clone(),
-        request_id: uuid::Uuid::new_v4().to_string(),
-        timestamp: chrono::Utc::now(),
-        ..Default::default()
-    };
+    })?;
+    drop(queries); // Release read lock
 
     // Execute the query
-    let result = orchestration.execute(&ctx, query, request.args).await?;
+    // TODO: The executor needs to be updated to accept CompositeQuery and execute it
+    // For now, return a helpful error message
+    tracing::warn!(
+        query_id = %query_id,
+        num_sources = query.sources.len(),
+        "Query execution not yet fully implemented - executor needs update"
+    );
 
-    let total_duration = start.elapsed();
-
-    // Build metadata
+    // Placeholder response until executor is wired up
+    let total_duration = _start.elapsed();
     let metadata = QueryExecutionMetadata {
         total_duration_ms: total_duration.as_millis() as u64,
         num_sources: query.sources.len(),
         num_stages: 0, // TODO: Extract from execution plan
         used_cache: false, // TODO: Track cache usage
-        warnings: vec![],
+        warnings: vec![
+            "Query execution not yet fully implemented - executor integration pending".to_string()
+        ],
     };
 
     Ok((
         StatusCode::OK,
         Json(ExecuteQueryResponse {
-            data: result,
+            data: serde_json::json!({
+                "message": "Query found but execution not yet implemented",
+                "query_id": query_id,
+                "num_sources": query.sources.len()
+            }),
             metadata,
         }),
     ))
-    */
 }
 
 /// List all available composite queries for a project
@@ -201,11 +194,23 @@ pub async fn list_queries(
         .as_ref()
         .ok_or_else(|| Error::Internal("Orchestration module not initialized".to_string()))?;
 
-    // TODO: Return list of configured queries
+    // Get list of configured queries
+    let queries = project.composite_queries.read();
+    let query_list: Vec<_> = queries
+        .iter()
+        .map(|(id, query)| {
+            serde_json::json!({
+                "id": id,
+                "num_sources": query.sources.len(),
+                "has_cache": query.cache.is_some(),
+            })
+        })
+        .collect();
+
     Ok((
         StatusCode::OK,
         Json(serde_json::json!({
-            "queries": []
+            "queries": query_list
         })),
     ))
 }
@@ -242,14 +247,18 @@ pub async fn get_query_info(
         .as_ref()
         .ok_or_else(|| Error::Internal("Orchestration module not initialized".to_string()))?;
 
-    // TODO: Return query details from configuration
-    Err::<Json<serde_json::Value>, _>(
-        Error::NotFound {
-            resource_type: "composite_query".to_string(),
-            id: query_id,
-        }
-        .into(),
-    )
+    // Get query details from configuration
+    let queries = project.composite_queries.read();
+    let query = queries.get(&query_id).ok_or_else(|| Error::NotFound {
+        resource_type: "composite_query".to_string(),
+        id: query_id.clone(),
+    })?;
+
+    // Return full query details
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::to_value(query).unwrap_or(serde_json::json!({}))),
+    ))
 }
 
 /// Error wrapper for HTTP responses
