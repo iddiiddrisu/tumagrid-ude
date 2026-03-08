@@ -33,16 +33,19 @@
 - [x] Token extraction helpers
 - [x] Error responses with proper HTTP status codes
 
-### Authentication ✅
+### Authentication & Authorization ✅
 - [x] JWT handler with HS256
-- [x] Token creation
-- [x] Token parsing and validation
-- [x] Expiry checking
+- [x] Token creation and parsing
+- [x] Token validation with expiry checking
 - [x] Key rotation support (multiple secrets)
 - [x] Internal/SC token generation
+- [x] Multi-tenant JWT claims (org_id, org_role, permissions, namespaces)
 - [x] Rule-based authorization (allow, deny, authenticated, match, and, or)
-- [x] Claims extraction
-- [x] Field path resolution (args.*, auth.*)
+- [x] Authorization checks in all CRUD handlers
+- [x] Namespace isolation for project boundaries
+- [x] Multi-tenant data isolation (automatic org_id filtering)
+- [x] Audit trails (created_by, updated_by fields)
+- [x] Claims extraction and field path resolution (args.*, auth.*)
 
 ### Application State ✅
 - [x] AppState with project modules
@@ -61,18 +64,11 @@
 
 ## In Progress 🚧
 
-### Authorization
-- [x] Basic rule types (allow, deny, authenticated, match)
+### Advanced Authorization
 - [ ] Nested query evaluation (Query rule)
 - [ ] Webhook-based authorization (Webhook rule)
 - [ ] Post-processing actions (field filtering, encryption)
-- [ ] Complete rule evaluator testing
-
-### MongoDB Driver
-- [ ] MongoDB connection
-- [ ] CRUD operations for MongoDB
-- [ ] Query translation (JSON to BSON)
-- [ ] Aggregation pipeline support
+- [ ] Comprehensive rule evaluator testing
 
 ## TODO - Phase 2 ⏳
 
@@ -96,16 +92,6 @@
 - [ ] Prepared statement caching
 
 ## TODO - Phase 3 ⏳
-
-### Event System
-- [ ] Event intent creation
-- [ ] Event staging
-- [ ] Event completion
-- [ ] Background event processor
-- [ ] Webhook invocation with retries
-- [ ] Template transformation (tera)
-- [ ] Event filtering
-- [ ] Redis pub/sub integration
 
 ### File Storage
 - [ ] Local file storage

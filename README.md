@@ -6,18 +6,30 @@ A high-performance Backend-as-a-Service (BaaS) platform written in Rust, featuri
 
 ## Features
 
+### Core Capabilities ✅
 - ✅ **Multi-Database Support**: PostgreSQL, MySQL, MongoDB (SQL Server coming soon)
 - ✅ **REST APIs**: Full CRUD operations via REST endpoints
-- ⚠️ **Authentication & Authorization**: JWT authentication ✅ | Authorization rules ⚠️ (basic only, advanced rules not implemented)
-- ⭐ **API Orchestration Engine**: Compose data from multiple sources (databases, REST APIs, GraphQL, serverless functions) in a single request with automatic parallelization and cross-source joins
-- ⭐ **Service Mesh**: Smart routing for managed services with health checking, latency tracking, and region-aware routing
 - ✅ **Real-time Ready**: Async/await architecture built on Tokio
 - ✅ **Type-Safe**: Leveraging Rust's type system for compile-time guarantees
 - ✅ **High Performance**: Built with Rust for maximum performance and efficiency
 - ✅ **Observability**: Full OpenTelemetry integration with traces, metrics, and logs
-- 🚧 **GraphQL Support**: Coming soon
-- 🚧 **Event System**: Intent-Stage-Complete pattern (coming soon)
-- 🚧 **File Storage**: S3, GCS, Local (coming soon)
+
+### Security & Multi-Tenancy ✅
+- ✅ **JWT Authentication**: Token-based authentication with key rotation support
+- ✅ **Namespace Isolation**: Kubernetes-style namespaces for flexible project isolation
+- ✅ **Multi-Tenant Data Isolation**: Automatic org_id injection and filtering for SaaS deployments
+- ✅ **Authorization Rules**: Role-based access control with allow, deny, authenticated, match, and/or rules
+- ✅ **Audit Trails**: Automatic created_by and updated_by field injection
+- ⚠️ **Advanced Authorization**: Query rules and webhook rules not yet implemented
+
+### Advanced Features ⭐
+- ⭐ **API Orchestration Engine**: Compose data from multiple sources (databases, REST APIs, GraphQL, serverless functions) in a single request with automatic parallelization and cross-source joins
+- ⭐ **Service Mesh**: Smart routing for managed services with health checking, latency tracking, and region-aware routing
+
+### Coming Soon 🚧
+- 🚧 **GraphQL Support**: Schema generation, queries, mutations
+- 🚧 **File Storage**: S3, GCS, Local storage backends
+- 🚧 **Advanced Auth**: Query and webhook-based authorization rules
 
 ## Project Structure
 
@@ -88,8 +100,7 @@ Key sections:
 - **databaseConfigs**: Database connection settings
 - **databaseRules**: Access control rules for collections/tables
 - **auths**: JWT authentication configuration
-- **eventingConfig**: Event triggers and webhooks
-- **fileStoreConfig**: File storage backends
+- **fileStoreConfig**: File storage backends (coming soon)
 
 ## API Usage
 
@@ -255,13 +266,19 @@ cargo tarpaulin --out Html
 
 **IMPORTANT: UDE is currently in BETA. It is suitable for development, testing, and internal projects, but NOT recommended for production use without additional security hardening.**
 
-### 🔴 Security Limitations
-- **Authorization Not Fully Implemented**: CRUD endpoints have TODOs for authorization checks. Currently, basic rule matching works (allow, deny, authenticated, match, and, or), but advanced features are incomplete:
+### ⚠️ Security Limitations
+- **Authorization Partially Implemented**: Basic authorization works well, but advanced features are not yet complete:
+  - ✅ JWT authentication with key rotation
+  - ✅ Namespace isolation for project boundaries
+  - ✅ Multi-tenant data isolation with automatic org_id filtering
+  - ✅ Basic rules (allow, deny, authenticated, match, and, or)
+  - ✅ Authorization checks in all CRUD handlers
+  - ✅ Audit trails (created_by, updated_by)
   - ❌ Query rules (nested query evaluation)
-  - ❌ Webhook rules
+  - ❌ Webhook rules (external authorization services)
   - ❌ Post-processing (field filtering, encryption)
-- **Risk**: Without proper authorization, any authenticated user could potentially access any data
-- **Recommendation**: Implement application-level authorization or use UDE behind a secure API gateway
+- **Risk**: Advanced authorization scenarios may require custom implementation
+- **Recommendation**: Current implementation suitable for internal tools and MVP SaaS products. Add additional security layers for sensitive data
 
 ### ⚠️ Testing & Quality
 - **Test Coverage**: ~30% (needs improvement)
@@ -273,17 +290,20 @@ cargo tarpaulin --out Html
 - **Recommendation**: Add thorough testing before using with critical data
 
 ### 📋 Missing Features
-The following features are documented but not yet implemented:
+The following features are planned but not yet implemented:
 - ❌ **GraphQL Support**: Schema generation, queries, mutations, subscriptions
-- ❌ **Event System**: Intent-Stage-Complete pattern, background processing
 - ❌ **File Storage**: S3, GCS, Local storage backends
 - ❌ **Real-time**: WebSocket support, live queries
 - ❌ **Schema Management**: Validation, inspection, type inference
-- ❌ **Distributed Systems**: Redis clustering, leader election
+- ❌ **Event System**: Background job processing (future consideration)
 
 ### ✅ What Works Well
 - ✅ Database CRUD (PostgreSQL, MySQL, MongoDB)
-- ✅ JWT token creation and validation
+- ✅ JWT authentication with key rotation
+- ✅ Namespace isolation for multi-project deployments
+- ✅ Multi-tenant data isolation with automatic org_id filtering
+- ✅ Authorization rules (allow, deny, authenticated, match, and, or)
+- ✅ Audit trails (created_by, updated_by)
 - ✅ HTTP gateway with excellent performance
 - ✅ OpenTelemetry observability (traces, metrics, logs)
 - ⭐ **API Orchestration Engine** (fully functional - unique feature!)
@@ -292,9 +312,10 @@ The following features are documented but not yet implemented:
 - ✅ Hot-reload configuration
 
 ### 📈 Production Readiness Estimate
-- **Current Status**: Beta (40% feature complete)
-- **Estimated time to Production (v1.0)**: 8-12 weeks with dedicated team
-- **Estimated time to Stable Beta**: 2-3 weeks (security + testing)
+- **Current Status**: Beta (55% feature complete)
+- **Security**: Core security features complete, advanced features pending
+- **Estimated time to Production (v1.0)**: 6-10 weeks with dedicated team
+- **Estimated time to Stable Beta**: 1-2 weeks (advanced auth + testing)
 
 ## Roadmap
 
@@ -312,9 +333,12 @@ The following features are documented but not yet implemented:
 - ✅ API Orchestration Engine (COMPLETE - unique feature!)
 - ✅ Service Mesh (COMPLETE - unique feature!)
 
-### Phase 2: Security & Stability 🔴 (Critical - Not Started)
-**Timeline: 2-3 weeks**
-- ❌ Implement authorization checks in CRUD handlers
+### Phase 2: Security & Stability 🟡 (In Progress - 70% Complete)
+**Timeline: 1-2 weeks remaining**
+- ✅ Implement authorization checks in CRUD handlers
+- ✅ Namespace isolation for project boundaries
+- ✅ Multi-tenant data isolation (automatic org_id filtering)
+- ✅ Audit trails (created_by, updated_by)
 - ❌ Complete advanced authorization rules (Query, Webhook)
 - ❌ Add post-processing (field filtering, encryption)
 - ❌ Integration tests
@@ -328,9 +352,9 @@ The following features are documented but not yet implemented:
 - ❌ Schema validation
 - ❌ Schema inspection
 - ❌ GraphQL support (schema generation, queries, mutations)
-- ❌ Event system (Intent-Stage-Complete pattern)
 - ❌ Real-time subscriptions (WebSockets)
 - ❌ File storage (S3, GCS, Local)
+- ❌ Background job processing (future consideration)
 
 ### Phase 4: Advanced Features ⏳ (Not Started)
 **Timeline: 2-3 weeks**
