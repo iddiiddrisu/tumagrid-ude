@@ -58,6 +58,48 @@ impl AuthModule {
         rules.get(collection).cloned()
     }
 
+    /// Build request params with auth context for multi-tenant data isolation
+    fn build_request_params(&self, claims: &TokenClaims) -> RequestParams {
+        let mut params = RequestParams::default();
+
+        // Add user ID for user-level isolation
+        params.auth.insert(
+            "user_id".to_string(),
+            serde_json::Value::String(claims.id.clone()),
+        );
+
+        // Add org_id for organization-level multi-tenancy
+        if let Some(org_id) = &claims.org_id {
+            params.auth.insert(
+                "org_id".to_string(),
+                serde_json::Value::String(org_id.clone()),
+            );
+        }
+
+        // Add org_role for role-based filtering
+        if let Some(org_role) = &claims.org_role {
+            params.auth.insert(
+                "org_role".to_string(),
+                serde_json::Value::String(org_role.clone()),
+            );
+        }
+
+        // Add permissions for fine-grained access control
+        if !claims.permissions.is_empty() {
+            let permissions: Vec<serde_json::Value> = claims
+                .permissions
+                .iter()
+                .map(|p| serde_json::Value::String(p.clone()))
+                .collect();
+            params.auth.insert(
+                "permissions".to_string(),
+                serde_json::Value::Array(permissions),
+            );
+        }
+
+        params
+    }
+
     /// Create an internal token for UDE's internal operations
     pub fn create_internal_token(&self, _ctx: &Context) -> Result<String> {
         let claims = TokenClaims {
@@ -141,9 +183,8 @@ impl AuthOperations for AuthModule {
         // For now, just allow if rule is "allow"
         match read_rule {
             Rule::Allow => {
-                // Create empty post-process
                 let post_process = PostProcess { actions: vec![] };
-                let params = RequestParams::default();
+                let params = self.build_request_params(&claims);
                 Ok((post_process, params))
             }
             Rule::Deny => Err(Error::Unauthorized {
@@ -155,7 +196,8 @@ impl AuthOperations for AuthModule {
                         reason: "Authentication required".to_string(),
                     })
                 } else {
-                    Ok((PostProcess { actions: vec![] }, RequestParams::default()))
+                    let params = self.build_request_params(&claims);
+                    Ok((PostProcess { actions: vec![] }, params))
                 }
             }
             _ => {
@@ -191,7 +233,7 @@ impl AuthOperations for AuthModule {
             })?;
 
         match create_rule {
-            Rule::Allow => Ok(RequestParams::default()),
+            Rule::Allow => Ok(self.build_request_params(&claims)),
             Rule::Deny => Err(Error::Unauthorized {
                 reason: "Access denied by rule".to_string(),
             }),
@@ -201,7 +243,7 @@ impl AuthOperations for AuthModule {
                         reason: "Authentication required".to_string(),
                     })
                 } else {
-                    Ok(RequestParams::default())
+                    Ok(self.build_request_params(&claims))
                 }
             }
             _ => Err(Error::Internal(
@@ -234,7 +276,7 @@ impl AuthOperations for AuthModule {
             })?;
 
         match update_rule {
-            Rule::Allow => Ok(RequestParams::default()),
+            Rule::Allow => Ok(self.build_request_params(&claims)),
             Rule::Deny => Err(Error::Unauthorized {
                 reason: "Access denied by rule".to_string(),
             }),
@@ -244,7 +286,7 @@ impl AuthOperations for AuthModule {
                         reason: "Authentication required".to_string(),
                     })
                 } else {
-                    Ok(RequestParams::default())
+                    Ok(self.build_request_params(&claims))
                 }
             }
             _ => Err(Error::Internal(
@@ -277,7 +319,7 @@ impl AuthOperations for AuthModule {
             })?;
 
         match delete_rule {
-            Rule::Allow => Ok(RequestParams::default()),
+            Rule::Allow => Ok(self.build_request_params(&claims)),
             Rule::Deny => Err(Error::Unauthorized {
                 reason: "Access denied by rule".to_string(),
             }),
@@ -287,7 +329,7 @@ impl AuthOperations for AuthModule {
                         reason: "Authentication required".to_string(),
                     })
                 } else {
-                    Ok(RequestParams::default())
+                    Ok(self.build_request_params(&claims))
                 }
             }
             _ => Err(Error::Internal(
