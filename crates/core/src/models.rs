@@ -565,42 +565,6 @@ pub struct Field {
 }
 
 //═══════════════════════════════════════════════════════════
-// EVENTING TYPES
-//═══════════════════════════════════════════════════════════
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventIntent {
-    pub event_type: String,
-    pub payload: serde_json::Value,
-}
-
-#[derive(Debug, Clone)]
-pub struct StagedEvent {
-    pub id: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct CompletedEvent {
-    pub id: String,
-    pub result: serde_json::Value,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QueueEventRequest {
-    pub event_type: String,
-    pub payload: serde_json::Value,
-    pub options: EventOptions,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct EventOptions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub delay: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub timeout: Option<u64>,
-}
-
-//═══════════════════════════════════════════════════════════
 // FILE STORE TYPES
 //═══════════════════════════════════════════════════════════
 

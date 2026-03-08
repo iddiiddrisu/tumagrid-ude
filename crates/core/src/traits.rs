@@ -46,38 +46,6 @@ pub trait CrudForAuth: Send + Sync {
 }
 
 #[async_trait]
-pub trait CrudForEventing: Send + Sync {
-    async fn internal_create(
-        &self,
-        ctx: &Context,
-        db_alias: &str,
-        project: &str,
-        col: &str,
-        req: CreateRequest,
-    ) -> Result<()>;
-
-    async fn internal_update(
-        &self,
-        ctx: &Context,
-        db_alias: &str,
-        project: &str,
-        col: &str,
-        req: UpdateRequest,
-    ) -> Result<()>;
-
-    async fn read(
-        &self,
-        ctx: &Context,
-        db_alias: &str,
-        col: &str,
-        req: ReadRequest,
-        params: RequestParams,
-    ) -> Result<ReadResponse>;
-
-    async fn get_db_type(&self, db_alias: &str) -> Result<DbType>;
-}
-
-#[async_trait]
 pub trait CrudForSchema: Send + Sync {
     async fn get_db_type(&self, db_alias: &str) -> Result<DbType>;
     async fn raw_batch(&self, ctx: &Context, db_alias: &str, queries: Vec<String>) -> Result<()>;
@@ -138,20 +106,6 @@ pub trait AuthOperations: Send + Sync {
 }
 
 #[async_trait]
-pub trait AuthForEventing: Send + Sync {
-    async fn get_internal_token(&self, ctx: &Context) -> Result<String>;
-    async fn is_eventing_authorized(
-        &self,
-        ctx: &Context,
-        project: &str,
-        token: &str,
-        event: &QueueEventRequest,
-    ) -> Result<RequestParams>;
-
-    async fn create_token(&self, ctx: &Context, claims: TokenClaims) -> Result<String>;
-}
-
-#[async_trait]
 pub trait AuthForCrud: Send + Sync {
     async fn post_process(&self, ctx: &Context, pp: PostProcess, result: &mut serde_json::Value) -> Result<()>;
 }
@@ -183,19 +137,6 @@ pub trait SchemaOperations: Send + Sync {
     ) -> Result<()>;
 
     fn get_schema(&self, db_alias: &str, col: &str) -> Option<Fields>;
-}
-
-//═══════════════════════════════════════════════════════════
-// EVENTING TRAITS
-//═══════════════════════════════════════════════════════════
-
-#[async_trait]
-pub trait EventingOperations: Send + Sync {
-    async fn create_intent_hook(&self, ctx: &Context, req: &EventIntent) -> Result<String>;
-
-    async fn hook_stage(&self, ctx: &Context, intent_id: &str, error: Option<&str>) -> Result<()>;
-
-    async fn queue_event(&self, ctx: &Context, req: QueueEventRequest) -> Result<()>;
 }
 
 //═══════════════════════════════════════════════════════════

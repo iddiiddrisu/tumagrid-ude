@@ -143,34 +143,6 @@ projects:
           - "my-super-secret-key-change-this-in-production"
           - "my-old-secret-key"
 
-    # Eventing configuration (optional)
-    eventingConfig:
-      enabled: true
-      dbAlias: postgres
-      col: event_logs
-
-    # Event triggers
-    eventingTriggers:
-      user_created:
-        id: user_created
-        eventType: "db.postgres.users.create"
-        url: "https://webhook.site/your-webhook-url"
-        retries: 3
-        timeout: 10
-        # Optional filter
-        filter:
-          rule: match
-          type: "=="
-          f1: "args.doc.status"
-          f2: "active"
-        # Optional template for payload transformation
-        template: |
-          {
-            "user_id": "{{ .doc.id }}",
-            "user_email": "{{ .doc.email }}",
-            "timestamp": "{{ .timestamp }}"
-          }
-
     # File storage configuration (optional)
     # fileStoreConfig:
     #   enabled: true

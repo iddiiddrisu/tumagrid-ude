@@ -33,10 +33,6 @@ pub struct Project {
     #[serde(default)]
     pub database_rules: HashMap<String, DatabaseRule>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub eventing_config: Option<EventingConfig>,
-    #[serde(default)]
-    pub eventing_triggers: HashMap<String, EventingTrigger>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub filestore_config: Option<FileStoreConfig>,
     #[serde(default)]
     pub filestore_rules: HashMap<String, FileRule>,
@@ -268,45 +264,6 @@ pub enum MatchType {
     In,
     NotIn,
     Contains,
-}
-
-//═══════════════════════════════════════════════════════════
-// EVENTING CONFIG
-//═══════════════════════════════════════════════════════════
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventingConfig {
-    pub enabled: bool,
-    pub db_alias: String,
-    #[serde(default = "default_event_col")]
-    pub col: String,
-}
-
-fn default_event_col() -> String {
-    "event_logs".to_string()
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventingTrigger {
-    pub id: String,
-    pub event_type: String,
-    pub url: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filter: Option<Rule>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub template: Option<String>,
-    #[serde(default = "default_retries")]
-    pub retries: u32,
-    #[serde(default = "default_timeout")]
-    pub timeout: u64, // seconds
-}
-
-fn default_retries() -> u32 {
-    3
-}
-
-fn default_timeout() -> u64 {
-    10
 }
 
 //═══════════════════════════════════════════════════════════
