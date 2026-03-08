@@ -41,18 +41,18 @@ impl QueryExecutor {
     /// Execute a composite query
     ///
     /// WHY: This is the main API that clients call. It handles the entire
-    /// orchestration process and returns the final composed response.
+    /// orchestration process and returns the final composed response with metadata.
     ///
     /// FLOW:
     /// 1. Plan execution (analyze dependencies, create stages)
     /// 2. Execute each stage (stages run sequentially, queries within stages run in parallel)
-    /// 3. Collect all results
+    /// 3. Collect all results and metadata
     /// 4. Compose final response
     pub async fn execute(
         &self,
         ctx: &Context,
         query: &CompositeQuery,
-    ) -> Result<serde_json::Value> {
+    ) -> Result<QueryExecutionResult> {
         tracing::info!(
             query_id = %query.id,
             "Executing composite query"
@@ -76,15 +76,32 @@ impl QueryExecutor {
             "All stages executed successfully"
         );
 
+        // Collect execution metadata
+        let mut used_cache = false;
+        let mut warnings = Vec::new();
+
+        for result in results.values() {
+            if result.metadata.from_cache {
+                used_cache = true;
+            }
+            warnings.extend(result.metadata.warnings.clone());
+        }
+
         // Compose response
-        let response = self.composer.compose(results, &query.compose)?;
+        let data = self.composer.compose(results, &query.compose)?;
 
         tracing::info!(
             query_id = %query.id,
             "Composite query executed successfully"
         );
 
-        Ok(response)
+        Ok(QueryExecutionResult {
+            data,
+            num_stages: plan.stages.len(),
+            num_sources: query.sources.len(),
+            used_cache,
+            warnings,
+        })
     }
 
     /// Execute the execution plan

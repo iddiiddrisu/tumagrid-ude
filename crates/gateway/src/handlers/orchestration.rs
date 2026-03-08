@@ -124,20 +124,23 @@ pub async fn execute_query_impl(
         .insert("project_id".to_string(), project_id.to_string());
 
     // Execute the query - This is the killer feature!
-    let data = orchestration.execute(&ctx, &query).await?;
+    let exec_result = orchestration.execute(&ctx, &query).await?;
 
     let total_duration = start.elapsed();
 
-    // Build metadata
+    // Build metadata from execution result
     let metadata = QueryExecutionMetadata {
         total_duration_ms: total_duration.as_millis() as u64,
-        num_sources: query.sources.len(),
-        num_stages: 0,        // TODO: Extract from execution plan
-        used_cache: false,    // TODO: Track cache usage from results
-        warnings: vec![],
+        num_sources: exec_result.num_sources,
+        num_stages: exec_result.num_stages,
+        used_cache: exec_result.used_cache,
+        warnings: exec_result.warnings,
     };
 
-    Ok(ExecuteQueryResponse { data, metadata })
+    Ok(ExecuteQueryResponse {
+        data: exec_result.data,
+        metadata,
+    })
 }
 
 // NOTE: execute_query handler has been replaced with a raw Tower service

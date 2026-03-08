@@ -529,3 +529,25 @@ pub struct ExecutionMetadata {
     /// Any warnings (e.g., "slow query", "rate limit approaching")
     pub warnings: Vec<String>,
 }
+
+/// Complete result from executing a composite query
+///
+/// WHY: Includes both the final data and execution metadata for
+/// observability, debugging, and client information.
+#[derive(Debug, Clone, Serialize)]
+pub struct QueryExecutionResult {
+    /// Final composed data
+    pub data: serde_json::Value,
+
+    /// Number of stages executed
+    pub num_stages: usize,
+
+    /// Number of data sources queried
+    pub num_sources: usize,
+
+    /// Whether any results came from cache
+    pub used_cache: bool,
+
+    /// Aggregated warnings from all sources
+    pub warnings: Vec<String>,
+}
