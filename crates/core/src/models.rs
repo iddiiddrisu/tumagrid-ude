@@ -427,6 +427,10 @@ pub struct SqlMetadata {
 pub struct CreateRequest {
     pub op: CreateOp,
     pub doc: serde_json::Value,
+    /// Filter for upsert operations (required when op is Upsert)
+    /// WHY: Upsert needs to know which document to update or insert
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub find: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

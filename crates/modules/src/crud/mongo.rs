@@ -168,13 +168,40 @@ impl CrudOperations for MongoDriver {
                 }
             }
             ude_core::CreateOp::Upsert => {
-                // Upsert requires a filter, which is not directly available in `CreateRequest`
-                // This would typically be an `update` operation with `upsert: true`
-                // TODO: Revisit `CreateRequest` for `CreateOp::Upsert` to include a filter
-                return Err(Error::Internal(
-                    "Upsert operation not supported directly by current CreateRequest for MongoDB. Use update with upsert option."
-                        .to_string(),
-                ));
+                // Upsert requires a filter to identify which document to update/insert
+                let filter = req
+                    .find
+                    .as_ref()
+                    .ok_or_else(|| {
+                        Error::Validation {
+                            field: "find".to_string(),
+                            message: "Upsert operation requires a 'find' filter".to_string(),
+                        }
+                    })?;
+
+                let filter_doc = bson::to_document(filter)
+                    .map_err(|e| Error::Database(DatabaseError::Query(e.to_string())))?;
+
+                let doc_to_upsert = bson::to_document(&req.doc)
+                    .map_err(|e| Error::Database(DatabaseError::Query(e.to_string())))?;
+
+                // Use replace_one with upsert: true
+                let options = mongodb::options::ReplaceOptions::builder()
+                    .upsert(true)
+                    .build();
+
+                let result = collection
+                    .replace_one(filter_doc, doc_to_upsert)
+                    .with_options(options)
+                    .await
+                    .map_err(|e| Error::Database(DatabaseError::Query(e.to_string())))?;
+
+                // Return 1 if a document was upserted or modified
+                if result.upserted_id.is_some() || result.modified_count > 0 {
+                    1
+                } else {
+                    0
+                }
             }
         };
 
