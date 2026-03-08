@@ -48,6 +48,10 @@ impl Server {
     }
 
     fn build_router(&self) -> Router {
+        // Build CORS layer from config
+        let config = self.state.config.load();
+        let cors_layer = self.build_cors_layer(&config.cluster_config.cors);
+
         // Middleware stack
         let middleware = ServiceBuilder::new()
             .layer(
@@ -56,9 +60,7 @@ impl Server {
                     .on_response(DefaultOnResponse::new().include_headers(true)),
             )
             .layer(CompressionLayer::new())
-            .layer(
-                CorsLayer::permissive() // TODO: Make this configurable
-            );
+            .layer(cors_layer);
 
         // API routes
         let api_routes = Router::new()
@@ -94,5 +96,51 @@ impl Server {
             .nest("/v1/api/:project", api_routes)
             .layer(middleware)
             .with_state(self.state.clone())
+    }
+
+    fn build_cors_layer(&self, cors_config: &ude_core::CorsConfig) -> CorsLayer {
+        if !cors_config.enabled {
+            // CORS disabled - very restrictive
+            return CorsLayer::new();
+        }
+
+        let mut cors = CorsLayer::new();
+
+        // Configure allowed origins
+        if cors_config.allowed_origins.is_empty() {
+            // No origins specified - allow all (permissive for development)
+            cors = cors.allow_origin(tower_http::cors::Any);
+        } else {
+            // Specific origins
+            use tower_http::cors::AllowOrigin;
+            let origins: Vec<_> = cors_config
+                .allowed_origins
+                .iter()
+                .filter_map(|s| s.parse::<axum::http::HeaderValue>().ok())
+                .collect();
+            cors = cors.allow_origin(AllowOrigin::list(origins));
+        }
+
+        // Configure allowed methods
+        use axum::http::Method;
+        let methods: Vec<Method> = cors_config
+            .allowed_methods
+            .iter()
+            .filter_map(|m| m.parse().ok())
+            .collect();
+        cors = cors.allow_methods(methods);
+
+        // Configure allowed headers
+        let headers: Vec<axum::http::HeaderName> = cors_config
+            .allowed_headers
+            .iter()
+            .filter_map(|h| h.parse().ok())
+            .collect();
+        cors = cors.allow_headers(headers);
+
+        // Configure max age
+        cors = cors.max_age(std::time::Duration::from_secs(cors_config.max_age));
+
+        cors
     }
 }

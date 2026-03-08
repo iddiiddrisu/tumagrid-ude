@@ -352,10 +352,63 @@ pub struct ClusterConfig {
     pub letsencrypt_email: String,
     #[serde(default = "default_telemetry")]
     pub enable_telemetry: bool,
+    #[serde(default)]
+    pub cors: CorsConfig,
 }
 
 fn default_telemetry() -> bool {
     true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CorsConfig {
+    #[serde(default = "default_cors_enabled")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub allowed_origins: Vec<String>,
+    #[serde(default = "default_allowed_methods")]
+    pub allowed_methods: Vec<String>,
+    #[serde(default = "default_allowed_headers")]
+    pub allowed_headers: Vec<String>,
+    #[serde(default = "default_max_age")]
+    pub max_age: u64,
+}
+
+impl Default for CorsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_cors_enabled(),
+            allowed_origins: vec![],
+            allowed_methods: default_allowed_methods(),
+            allowed_headers: default_allowed_headers(),
+            max_age: default_max_age(),
+        }
+    }
+}
+
+fn default_cors_enabled() -> bool {
+    true
+}
+
+fn default_allowed_methods() -> Vec<String> {
+    vec![
+        "GET".to_string(),
+        "POST".to_string(),
+        "PUT".to_string(),
+        "DELETE".to_string(),
+        "OPTIONS".to_string(),
+    ]
+}
+
+fn default_allowed_headers() -> Vec<String> {
+    vec![
+        "Content-Type".to_string(),
+        "Authorization".to_string(),
+    ]
+}
+
+fn default_max_age() -> u64 {
+    3600
 }
 
 impl Default for ClusterConfig {
@@ -363,6 +416,7 @@ impl Default for ClusterConfig {
         Self {
             letsencrypt_email: String::new(),
             enable_telemetry: default_telemetry(),
+            cors: CorsConfig::default(),
         }
     }
 }
