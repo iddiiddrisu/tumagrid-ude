@@ -2,11 +2,13 @@
 
 A high-performance Backend-as-a-Service (BaaS) platform written in Rust, featuring a powerful API orchestration engine and service mesh capabilities. UDE provides developers with a universal engine to build, deploy, and scale applications with ease.
 
+> **⚠️ BETA SOFTWARE**: UDE is currently in beta and under active development. It is suitable for development, testing, and internal projects, but **NOT recommended for production use** without additional security hardening. See [Known Limitations](#️-known-limitations-beta-release) for details.
+
 ## Features
 
 - ✅ **Multi-Database Support**: PostgreSQL, MySQL, MongoDB (SQL Server coming soon)
 - ✅ **REST APIs**: Full CRUD operations via REST endpoints
-- ✅ **Authentication & Authorization**: JWT-based auth with flexible rule engine
+- ⚠️ **Authentication & Authorization**: JWT authentication ✅ | Authorization rules ⚠️ (basic only, advanced rules not implemented)
 - ⭐ **API Orchestration Engine**: Compose data from multiple sources (databases, REST APIs, GraphQL, serverless functions) in a single request with automatic parallelization and cross-source joins
 - ⭐ **Service Mesh**: Smart routing for managed services with health checking, latency tracking, and region-aware routing
 - ✅ **Real-time Ready**: Async/await architecture built on Tokio
@@ -249,44 +251,119 @@ cargo install cargo-tarpaulin
 cargo tarpaulin --out Html
 ```
 
+## ⚠️ Known Limitations (Beta Release)
+
+**IMPORTANT: UDE is currently in BETA. It is suitable for development, testing, and internal projects, but NOT recommended for production use without additional security hardening.**
+
+### 🔴 Security Limitations
+- **Authorization Not Fully Implemented**: CRUD endpoints have TODOs for authorization checks. Currently, basic rule matching works (allow, deny, authenticated, match, and, or), but advanced features are incomplete:
+  - ❌ Query rules (nested query evaluation)
+  - ❌ Webhook rules
+  - ❌ Post-processing (field filtering, encryption)
+- **Risk**: Without proper authorization, any authenticated user could potentially access any data
+- **Recommendation**: Implement application-level authorization or use UDE behind a secure API gateway
+
+### ⚠️ Testing & Quality
+- **Test Coverage**: ~30% (needs improvement)
+  - ✅ JWT handler has tests
+  - ✅ Query builder has tests
+  - ❌ Most modules lack comprehensive tests
+  - ❌ No integration tests
+  - ❌ No end-to-end tests
+- **Recommendation**: Add thorough testing before using with critical data
+
+### 📋 Missing Features
+The following features are documented but not yet implemented:
+- ❌ **GraphQL Support**: Schema generation, queries, mutations, subscriptions
+- ❌ **Event System**: Intent-Stage-Complete pattern, background processing
+- ❌ **File Storage**: S3, GCS, Local storage backends
+- ❌ **Real-time**: WebSocket support, live queries
+- ❌ **Schema Management**: Validation, inspection, type inference
+- ❌ **Distributed Systems**: Redis clustering, leader election
+
+### ✅ What Works Well
+- ✅ Database CRUD (PostgreSQL, MySQL, MongoDB)
+- ✅ JWT token creation and validation
+- ✅ HTTP gateway with excellent performance
+- ✅ OpenTelemetry observability (traces, metrics, logs)
+- ⭐ **API Orchestration Engine** (fully functional - unique feature!)
+- ⭐ **Service Mesh** (fully functional - unique feature!)
+- ✅ Docker deployment
+- ✅ Hot-reload configuration
+
+### 📈 Production Readiness Estimate
+- **Current Status**: Beta (40% feature complete)
+- **Estimated time to Production (v1.0)**: 8-12 weeks with dedicated team
+- **Estimated time to Stable Beta**: 2-3 weeks (security + testing)
+
 ## Roadmap
 
-### Phase 1: Foundation (Complete)
+### Phase 1: Foundation ✅ (Complete)
 - ✅ Core types and traits
 - ✅ Error handling
 - ✅ Configuration system
-- ✅ PostgreSQL/MySQL/SQL Server support
+- ✅ PostgreSQL/MySQL support
+- ✅ MongoDB driver (complete!)
 - ✅ Basic CRUD operations
 - ✅ HTTP server with Axum
 - ✅ JWT authentication
+- ✅ Basic authorization rules (allow, deny, authenticated, match, and, or)
+- ✅ OpenTelemetry observability
+- ✅ API Orchestration Engine (COMPLETE - unique feature!)
+- ✅ Service Mesh (COMPLETE - unique feature!)
 
-### Phase 2: Core Features (In Progress)
-- 🚧 Complete authorization rules
-- 🚧 MongoDB driver
-- 🚧 Schema validation
-- 🚧 GraphQL support
-- 🚧 Query batching
+### Phase 2: Security & Stability 🔴 (Critical - Not Started)
+**Timeline: 2-3 weeks**
+- ❌ Implement authorization checks in CRUD handlers
+- ❌ Complete advanced authorization rules (Query, Webhook)
+- ❌ Add post-processing (field filtering, encryption)
+- ❌ Integration tests
+- ❌ End-to-end tests
+- ❌ Security audit
+- ❌ CI/CD pipeline setup
 
-### Phase 3: Advanced Features
-- ⏳ Event system (Intent-Stage-Complete)
-- ⏳ File storage (S3, GCS, Local)
-- ⏳ Real-time subscriptions (WebSockets)
-- ⏳ Nested query evaluation
-- ⏳ Webhook rules
+### Phase 3: Core Features 🚧 (Not Started)
+**Timeline: 4-6 weeks**
+- ❌ SQL Server support (awaiting SQLx 0.8)
+- ❌ Schema validation
+- ❌ Schema inspection
+- ❌ GraphQL support (schema generation, queries, mutations)
+- ❌ Event system (Intent-Stage-Complete pattern)
+- ❌ Real-time subscriptions (WebSockets)
+- ❌ File storage (S3, GCS, Local)
 
-### Phase 4: Distributed Systems
-- ⏳ Redis pub/sub for clustering
-- ⏳ Configuration synchronization
-- ⏳ Leader election
-- ⏳ Kubernetes integration
+### Phase 4: Advanced Features ⏳ (Not Started)
+**Timeline: 2-3 weeks**
+- ❌ Nested query evaluation in auth rules
+- ❌ Webhook rules
+- ❌ Query batching
+- ❌ Load testing and optimization
+- ❌ Performance benchmarks
+- ❌ API documentation (rustdoc)
+
+### Phase 5: Distributed Systems ⏳ (Not Started)
+**Timeline: 2-3 weeks**
+- ❌ Redis pub/sub for clustering
+- ❌ Configuration synchronization
+- ❌ Leader election
+- ❌ Kubernetes integration (Helm charts)
+- ❌ Admin UI
 
 ## Performance
 
-Target improvements over Go version:
-- **Throughput**: 2-3x higher requests/second
-- **Latency**: 30-40% lower p99 latency
-- **Memory**: 40-50% lower memory usage
-- **CPU**: More efficient CPU utilization
+**Expected Performance Characteristics** (not yet benchmarked):
+- **Language**: Rust provides zero-cost abstractions and no garbage collection
+- **Runtime**: Tokio async runtime for efficient I/O
+- **Compilation**: Optimized release builds with LTO and single codegen unit
+- **Concurrency**: Lock-free reads with arc-swap for hot-reload
+
+**Note**: Performance benchmarks and load testing have not yet been conducted. The above are theoretical benefits of the chosen technology stack.
+
+**TODO**:
+- [ ] Conduct load testing
+- [ ] Establish performance baselines
+- [ ] Create benchmark suite
+- [ ] Compare against similar BaaS platforms
 
 ## Contributing
 
