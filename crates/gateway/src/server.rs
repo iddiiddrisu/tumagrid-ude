@@ -1,4 +1,4 @@
-use crate::{handlers, state::AppState};
+use crate::{handlers, raw_handlers, state::AppState};
 use axum::{
     routing::{delete, get, post},
     Router,
@@ -72,7 +72,11 @@ impl Server {
             // Orchestration (The Killer Feature!)
             .route("/orchestration", get(handlers::orchestration::list_queries))
             .route("/orchestration/:query_id", get(handlers::orchestration::get_query_info))
-            .route("/orchestration/:query_id/execute", post(handlers::orchestration::run_query))
+            // Raw Tokio handler - bypasses Axum's Handler trait
+            .route_service(
+                "/orchestration/:query_id/execute",
+                raw_handlers::OrchestrationExecuteService::new(self.state.clone())
+            )
             // Health check
             .route("/health", get(handlers::health::health_check));
 

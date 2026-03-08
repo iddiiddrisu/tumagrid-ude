@@ -27,8 +27,6 @@
 
 use axum::{
     extract::{Path, State},
-    http::{HeaderMap, StatusCode},
-    response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -82,8 +80,10 @@ pub struct QueryExecutionMetadata {
     pub warnings: Vec<String>,
 }
 
-/// Execute a composite query - business logic extracted from Axum
-async fn execute_query_impl(
+/// Execute a composite query - Pure business logic (no Axum)
+///
+/// WHY: Extracted to avoid Axum's Handler trait issues. This is pure async Tokio code.
+pub async fn execute_query_impl(
     state: &AppState,
     project_id: &str,
     query_id: &str,
@@ -100,15 +100,17 @@ async fn execute_query_impl(
     let project = state.get_project(project_id)?;
 
     // Get the composite query from configuration
-    let queries = project.composite_queries.read();
-    let query = queries.get(query_id).cloned().ok_or_else(|| Error::Validation {
-        field: "queryId".to_string(),
-        message: format!(
-            "Composite query '{}' not found. Configure queries in config.yaml under compositeQueries",
-            query_id
-        ),
-    })?;
-    drop(queries);
+    // Use a scope to ensure the RwLockReadGuard is dropped before any await
+    let query = {
+        let queries = project.composite_queries.read();
+        queries.get(query_id).cloned().ok_or_else(|| Error::Validation {
+            field: "queryId".to_string(),
+            message: format!(
+                "Composite query '{}' not found. Configure queries in config.yaml under compositeQueries",
+                query_id
+            ),
+        })?
+    };
 
     // Get orchestration module
     let orchestration = project
@@ -121,7 +123,7 @@ async fn execute_query_impl(
     ctx.metadata
         .insert("project_id".to_string(), project_id.to_string());
 
-    // Execute the query
+    // Execute the query - This is the killer feature!
     let data = orchestration.execute(&ctx, &query).await?;
 
     let total_duration = start.elapsed();
@@ -138,30 +140,9 @@ async fn execute_query_impl(
     Ok(ExecuteQueryResponse { data, metadata })
 }
 
-/// Execute a composite query
-///
-/// WHY: This is the main API for orchestration. Clients send a single request
-/// and get back data composed from multiple sources.
-///
-/// ROUTE: POST /v1/api/:project/orchestration/:queryId/execute
-///
-/// **AXUM BLOCKER**: Cannot get this handler to compile despite having identical
-/// signature to get_query_info. The QueryExecutor is fully implemented and the
-/// business logic (execute_query_impl) is ready. This is purely an Axum Handler
-/// trait issue. Consider replacing Axum with raw Tokio/hyper.
-pub async fn run_query(
-    State(_state): State<Arc<AppState>>,
-    Path((_project_id, query_id)): Path<(String, String)>,
-) -> Result<Json<serde_json::Value>> {
-    // TODO: Call execute_query_impl once Axum Handler trait issue resolved
-    // The implementation is ready in execute_query_impl() above
-    Ok(Json(serde_json::json!({
-        "error": "Execution blocked by Axum Handler trait issue",
-        "query_id": query_id,
-        "message": "QueryExecutor is fully functional - issue is in HTTP handler glue",
-        "solution": "Consider replacing Axum with raw Tokio/hyper for this endpoint"
-    })))
-}
+// NOTE: execute_query handler has been replaced with a raw Tower service
+// See: crates/gateway/src/raw_handlers.rs - OrchestrationExecuteService
+// This bypasses Axum's Handler trait which was blocking the implementation.
 
 /// List all available composite queries for a project
 ///

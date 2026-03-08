@@ -1,5 +1,6 @@
 mod server;
 mod handlers;
+mod raw_handlers;
 mod state;
 mod telemetry;
 
