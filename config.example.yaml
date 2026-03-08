@@ -17,11 +17,12 @@ clusterConfig:
 #   defaultTtl: 300
 
 projects:
-  # Example project
+  # Example project in default namespace
   myapp:
     projectConfig:
       id: myapp
       name: "My Application"
+      namespace: "default"  # Optional: defaults to "default" if not specified
       contextTimeGraphQL: 30000  # 30 seconds timeout
       aesKey: "your-32-char-encryption-key-here"
       secrets:
@@ -210,3 +211,74 @@ projects:
     #   payment_service:
     #     id: payment_service
     #     url: "https://payment-api.example.com"
+
+  # ═══════════════════════════════════════════════════════════
+  # NAMESPACE ISOLATION EXAMPLES
+  # ═══════════════════════════════════════════════════════════
+  
+  # Example: Customer-specific namespace for SaaS isolation
+  customer-acme-prod:
+    projectConfig:
+      id: customer-acme-prod
+      name: "Acme Corp Production"
+      namespace: "customer-acme"  # Isolated namespace for this customer
+  
+  # Example: Environment-based namespaces
+  my-staging:
+    projectConfig:
+      id: my-staging
+      name: "Staging Environment"
+      namespace: "staging"  # Staging namespace
+  
+  my-production:
+    projectConfig:
+      id: my-production
+      name: "Production Environment"
+      namespace: "production"  # Production namespace (restricted access)
+  
+  # Example: Team-based namespaces
+  team-frontend-app:
+    projectConfig:
+      id: team-frontend-app
+      name: "Frontend Team Application"
+      namespace: "team-frontend"  # Frontend team namespace
+  
+  # Multiple projects can share the same namespace for related work
+  ecommerce-api:
+    projectConfig:
+      id: ecommerce-api
+      name: "Ecommerce API"
+      namespace: "ecommerce"  # Shared namespace
+  
+  ecommerce-admin:
+    projectConfig:
+      id: ecommerce-admin
+      name: "Ecommerce Admin"
+      namespace: "ecommerce"  # Same namespace - shared auth
+  
+  ecommerce-warehouse:
+    projectConfig:
+      id: ecommerce-warehouse
+      name: "Warehouse Management"
+      namespace: "ecommerce"  # Same namespace - one token for all three!
+
+# ═══════════════════════════════════════════════════════════
+# JWT TOKEN FORMAT WITH NAMESPACES
+# ═══════════════════════════════════════════════════════════
+#
+# {
+#   "id": "user_123",
+#   "email": "user@example.com",
+#   "org_id": "org_456",
+#   "org_role": "developer",
+#   "permissions": ["crud:read", "crud:write"],
+#   "namespaces": ["default", "staging", "team-frontend"],  ← NAMESPACE ACCESS
+#   "exp": 1234567890
+# }
+#
+# This user can access:
+# - Projects in "default" namespace ✓
+# - Projects in "staging" namespace ✓
+# - Projects in "team-frontend" namespace ✓
+# - Projects in "production" namespace ✗ (not in list)
+# - Projects in "customer-acme" namespace ✗ (not in list)

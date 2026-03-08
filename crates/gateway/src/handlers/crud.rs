@@ -1,4 +1,4 @@
-use crate::handlers::{extract_context, extract_token};
+use crate::handlers::{extract_context, extract_token, validate_namespace_access};
 use crate::state::AppState;
 use axum::{
     extract::{Path, State},
@@ -31,8 +31,14 @@ pub async fn create_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // Authorization check
+    // Extract and parse token
     let token = extract_token(&headers)?;
+    let claims = modules.auth.parse_token(&ctx, &token).await?;
+
+    // Validate namespace access
+    validate_namespace_access(&project, &modules, &claims)?;
+
+    // Authorization check
     let db_type = modules.crud.get_db_type(&db_alias).await?;
     let params = modules
         .auth
@@ -77,8 +83,14 @@ pub async fn read_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // Authorization check
+    // Extract and parse token
     let token = extract_token(&headers)?;
+    let claims = modules.auth.parse_token(&ctx, &token).await?;
+
+    // Validate namespace access
+    validate_namespace_access(&project, &modules, &claims)?;
+
+    // Authorization check
     let db_type = modules.crud.get_db_type(&db_alias).await?;
     let (post_process, params) = modules
         .auth
@@ -131,8 +143,14 @@ pub async fn update_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // Authorization check
+    // Extract and parse token
     let token = extract_token(&headers)?;
+    let claims = modules.auth.parse_token(&ctx, &token).await?;
+
+    // Validate namespace access
+    validate_namespace_access(&project, &modules, &claims)?;
+
+    // Authorization check
     let db_type = modules.crud.get_db_type(&db_alias).await?;
     let params = modules
         .auth
@@ -177,8 +195,14 @@ pub async fn delete_handler(
     // Get project modules
     let modules = state.get_project(&project)?;
 
-    // Authorization check
+    // Extract and parse token
     let token = extract_token(&headers)?;
+    let claims = modules.auth.parse_token(&ctx, &token).await?;
+
+    // Validate namespace access
+    validate_namespace_access(&project, &modules, &claims)?;
+
+    // Authorization check
     let db_type = modules.crud.get_db_type(&db_alias).await?;
     let params = modules
         .auth

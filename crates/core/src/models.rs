@@ -87,6 +87,13 @@ pub struct TokenClaims {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub permissions: Vec<String>,
 
+    // ===== Namespace Isolation =====
+
+    /// Namespaces the user has access to (for project isolation)
+    /// If empty, user has access to "default" namespace only
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub namespaces: Vec<String>,
+
     // ===== Legacy/Compatibility =====
 
     /// Legacy role field (for backwards compatibility)
@@ -146,6 +153,26 @@ impl TokenClaims {
     /// Try to get the current organization ID
     pub fn try_org_id(&self) -> Option<&str> {
         self.org_id.as_deref()
+    }
+
+    /// Check if user has access to a specific namespace
+    pub fn has_namespace_access(&self, namespace: &str) -> bool {
+        // If namespaces list is empty, assume access to "default" only
+        if self.namespaces.is_empty() {
+            return namespace == "default";
+        }
+
+        // Otherwise, check if namespace is in the list
+        self.namespaces.iter().any(|ns| ns == namespace)
+    }
+
+    /// Get accessible namespaces (returns ["default"] if empty)
+    pub fn get_namespaces(&self) -> Vec<&str> {
+        if self.namespaces.is_empty() {
+            vec!["default"]
+        } else {
+            self.namespaces.iter().map(|s| s.as_str()).collect()
+        }
     }
 }
 

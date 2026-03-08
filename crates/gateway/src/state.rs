@@ -85,6 +85,7 @@ impl AppState {
         Ok(ProjectModules {
             crud,
             auth,
+            project_config: config.project_config.clone(),
             orchestration,
         })
     }
@@ -153,7 +154,7 @@ impl AppState {
 #[derive(Clone)]
 pub struct ProjectModules {
     pub crud: Arc<CrudModule>,
-    #[allow(dead_code)]
     pub auth: Arc<AuthModule>,
+    pub project_config: ProjectConfig,
     pub orchestration: Option<Arc<QueryExecutor>>,
 }

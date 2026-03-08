@@ -52,12 +52,19 @@ pub struct Project {
 pub struct ProjectConfig {
     pub id: String,
     pub name: String,
+    /// Namespace for project isolation (defaults to "default")
+    #[serde(default = "default_namespace")]
+    pub namespace: String,
     #[serde(default)]
     pub secrets: Vec<Secret>,
     #[serde(default)]
     pub aes_key: String,
     #[serde(default = "default_context_time")]
     pub context_time_graphql: u64, // milliseconds
+}
+
+fn default_namespace() -> String {
+    "default".to_string()
 }
 
 fn default_context_time() -> u64 {

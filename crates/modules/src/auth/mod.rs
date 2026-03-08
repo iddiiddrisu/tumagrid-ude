@@ -69,6 +69,7 @@ impl AuthModule {
             org_role: None,
             orgs: Vec::new(),
             permissions: Vec::new(),
+            namespaces: Vec::new(), // Internal token has access to all namespaces
             role: Some("SpaceCloud".to_string()),
             extra: std::collections::HashMap::new(),
             exp: None,
@@ -89,6 +90,7 @@ impl AuthModule {
             org_role: None,
             orgs: Vec::new(),
             permissions: Vec::new(),
+            namespaces: Vec::new(), // Node token has access to all namespaces
             role: Some("SpaceCloud".to_string()),
             extra: std::collections::HashMap::new(),
             exp: None,
