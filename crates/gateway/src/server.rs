@@ -72,7 +72,7 @@ impl Server {
             // Orchestration (The Killer Feature!)
             .route("/orchestration", get(handlers::orchestration::list_queries))
             .route("/orchestration/:query_id", get(handlers::orchestration::get_query_info))
-            .route("/orchestration/:query_id", post(handlers::orchestration::execute_query))
+            .route("/orchestration/:query_id/execute", post(handlers::orchestration::run_query))
             // Health check
             .route("/health", get(handlers::health::health_check));
 
