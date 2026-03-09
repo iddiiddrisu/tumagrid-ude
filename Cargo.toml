@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "crates/core",
-    # "crates/managers",  # TODO: Create this crate
+    "crates/managers",
     "crates/modules",
     # "crates/utils",     # TODO: Create this crate
     "crates/gateway",

@@ -7,7 +7,7 @@ pub mod orchestration;
 use axum::http::HeaderMap;
 use ude_core::{error::AuthError, *};
 use std::time::Duration;
-use crate::state::ProjectModules;
+use ude_managers::ProjectModules;
 
 /// Extract context from HTTP headers
 pub fn extract_context(headers: &HeaderMap) -> Context {

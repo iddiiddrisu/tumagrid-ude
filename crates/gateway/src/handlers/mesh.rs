@@ -37,7 +37,7 @@ use std::sync::Arc;
 ///
 /// GET /mesh/services
 pub async fn list_services(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    let services = state.mesh.registry.list_services().await;
+    let services = state.mesh().registry.list_services().await;
 
     Json(ListServicesResponse {
         count: services.len(),
@@ -81,7 +81,7 @@ pub async fn get_service(
     Path(service_id): Path<String>,
 ) -> Result<Json<ServiceDetails>, (StatusCode, String)> {
     let service = state
-        .mesh
+        .mesh()
         .registry
         .get_service(&service_id)
         .await
@@ -94,13 +94,13 @@ pub async fn get_service(
 
     // Get health stats
     let health_stats = state
-        .mesh
+        .mesh()
         .health_checker
         .get_service_health_stats(&service_id)
         .await;
 
     // Get routing stats
-    let routing_stats = state.mesh.router.get_routing_stats(&service_id).await;
+    let routing_stats = state.mesh().router.get_routing_stats(&service_id).await;
 
     Ok(Json(ServiceDetails {
         service,
@@ -145,7 +145,7 @@ pub async fn register_service(
 
     // Register in mesh
     state
-        .mesh
+        .mesh()
         .register_service(service)
         .await
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
@@ -188,7 +188,7 @@ pub async fn unregister_service(
     Path(service_id): Path<String>,
 ) -> Result<Json<UnregisterServiceResponse>, (StatusCode, String)> {
     state
-        .mesh
+        .mesh()
         .registry
         .unregister_service(&service_id)
         .await
@@ -220,7 +220,7 @@ pub async fn get_service_health(
     Path(service_id): Path<String>,
 ) -> Result<Json<ServiceHealthResponse>, (StatusCode, String)> {
     let stats = state
-        .mesh
+        .mesh()
         .health_checker
         .get_service_health_stats(&service_id)
         .await
@@ -232,7 +232,7 @@ pub async fn get_service_health(
         })?;
 
     let endpoints = state
-        .mesh
+        .mesh()
         .registry
         .get_service(&service_id)
         .await
@@ -281,7 +281,7 @@ pub async fn get_service_latency(
     Path(service_id): Path<String>,
 ) -> Result<Json<ServiceLatencyResponse>, (StatusCode, String)> {
     let latency_info = state
-        .mesh
+        .mesh()
         .latency_tracker
         .get_service_latency_stats(&service_id)
         .await

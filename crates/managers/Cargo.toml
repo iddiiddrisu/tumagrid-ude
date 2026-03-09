@@ -1,0 +1,38 @@
+[package]
+name = "ude-managers"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core dependencies
+ude-core = { path = "../core" }
+ude-modules = { path = "../modules" }
+
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+
+# Concurrency
+parking_lot = "0.12"
+arc-swap = "1.7"
+
+# Logging
+tracing = "0.1"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Configuration
+config = { version = "0.14", default-features = false, features = ["yaml", "json"] }
+
+# Optional Redis for clustering (future)
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"], optional = true }
+
+[features]
+default = []
+clustering = ["redis"]

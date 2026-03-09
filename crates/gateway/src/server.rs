@@ -49,7 +49,7 @@ impl Server {
 
     fn build_router(&self) -> Router {
         // Build CORS layer from config
-        let config = self.state.config.load();
+        let config = self.state.config();
         let cors_layer = self.build_cors_layer(&config.cluster_config.cors);
 
         // Middleware stack

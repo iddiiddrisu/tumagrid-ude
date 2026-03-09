@@ -12,6 +12,7 @@ path = "src/main.rs"
 [dependencies]
 ude-core = { path = "../core" }
 ude-modules = { path = "../modules" }
+ude-managers = { path = "../managers" }
 
 tokio = { workspace = true }
 async-trait = { workspace = true }

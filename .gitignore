@@ -4,6 +4,10 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 
+# Reference code (not part of this project)
+space-cloud-master/
+space-cloud-master.zip
+
 # IDE
 .vscode/
 .idea/
