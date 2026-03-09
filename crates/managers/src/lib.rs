@@ -23,8 +23,9 @@ mod admin;
 mod integration;
 mod sync;
 
-pub use admin::AdminManager;
-pub use integration::IntegrationManager;
+// Re-export public types
+pub use admin::{AdminClaims, AdminManager, LoginResponse};
+pub use integration::{Hook, HookResponse, IntegrationManager};
 pub use sync::{ProjectModules, SyncManager};
 
 use std::sync::Arc;
@@ -73,6 +74,7 @@ impl Managers {
 
         // Wire up circular dependencies
         admin.set_sync_manager(sync.clone());
+        admin.set_integration_manager(integration.clone());
 
         Ok(Self {
             sync,

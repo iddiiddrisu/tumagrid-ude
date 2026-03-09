@@ -356,6 +356,59 @@ pub struct ClusterConfig {
     pub enable_telemetry: bool,
     #[serde(default)]
     pub cors: CorsConfig,
+    #[serde(default)]
+    pub admin: AdminConfig,
+}
+
+/// Admin configuration for administrative access
+///
+/// WHY: Admin endpoints need authentication separate from user auth.
+/// Provides super-admin access to cluster management, project creation, etc.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminConfig {
+    /// Admin username
+    #[serde(default = "default_admin_user")]
+    pub user: String,
+
+    /// Admin password
+    #[serde(default = "default_admin_pass")]
+    pub pass: String,
+
+    /// Admin JWT secret
+    #[serde(default = "default_admin_secret")]
+    pub secret: String,
+
+    /// Whether to enforce admin auth (false for development)
+    #[serde(default = "default_enforce_admin_auth")]
+    pub enforce_auth: bool,
+}
+
+fn default_admin_user() -> String {
+    "admin".to_string()
+}
+
+fn default_admin_pass() -> String {
+    "admin".to_string()
+}
+
+fn default_admin_secret() -> String {
+    use std::env;
+    env::var("ADMIN_SECRET").unwrap_or_else(|_| "change-this-secret".to_string())
+}
+
+fn default_enforce_admin_auth() -> bool {
+    true
+}
+
+impl Default for AdminConfig {
+    fn default() -> Self {
+        Self {
+            user: default_admin_user(),
+            pass: default_admin_pass(),
+            secret: default_admin_secret(),
+            enforce_auth: default_enforce_admin_auth(),
+        }
+    }
 }
 
 fn default_telemetry() -> bool {
@@ -419,6 +472,7 @@ impl Default for ClusterConfig {
             letsencrypt_email: String::new(),
             enable_telemetry: default_telemetry(),
             cors: CorsConfig::default(),
+            admin: AdminConfig::default(),
         }
     }
 }

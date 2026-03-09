@@ -110,6 +110,15 @@ pub enum AuthError {
 
     #[error("Forbidden")]
     Forbidden,
+
+    #[error("Invalid credentials")]
+    InvalidCredentials,
+
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
+
+    #[error("Token generation failed: {0}")]
+    TokenGeneration(String),
 }
 
 // Result type alias
